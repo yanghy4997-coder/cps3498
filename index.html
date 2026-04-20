@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+
+        h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #f8fafc; }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.9rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #1e293b; border-radius: 10px; padding: 4px; }
+        .tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 500; color: #94a3b8; transition: all 0.2s; }
+        .tab.active { background: #334155; color: #f8fafc; }
+        .tab:hover:not(.active) { color: #cbd5e1; }
+
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Input area */
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group input[type="text"],
+        .input-group input[type="password"] {
+            width: 100%; padding: 14px 110px 14px 16px; font-size: 1rem;
+            background: #1e293b; border: 2px solid #334155; border-radius: 10px;
+            color: #f8fafc; outline: none; transition: border 0.2s;
+        }
+        .input-group input:focus { border-color: #3b82f6; }
+        .input-group button {
+            position: absolute; right: 6px; top: 6px; bottom: 6px;
+            padding: 0 20px; background: #3b82f6; color: #fff; border: none;
+            border-radius: 7px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .input-group button:hover { background: #2563eb; }
+        .input-group button:disabled { background: #475569; cursor: not-allowed; }
+
+        /* Toggle visibility */
+        .toggle-vis {
+            position: absolute; right: 110px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.8rem; padding: 4px 8px;
+        }
+
+        /* File upload */
+        .upload-zone {
+            border: 2px dashed #334155; border-radius: 10px; padding: 40px; text-align: center;
+            margin-bottom: 20px; cursor: pointer; transition: border 0.2s; position: relative;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #3b82f6; }
+        .upload-zone input { display: none; }
+        .upload-zone p { color: #94a3b8; }
+        .upload-zone .filename { color: #3b82f6; font-weight: 500; margin-top: 8px; }
+        .upload-btn {
+            display: block; width: 100%; padding: 12px; background: #3b82f6; color: #fff;
+            border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: background 0.2s; margin-bottom: 20px;
+        }
+        .upload-btn:hover { background: #2563eb; }
+        .upload-btn:disabled { background: #475569; cursor: not-allowed; }
+
+        /* Result card */
+        .result-card {
+            background: #1e293b; border-radius: 12px; padding: 24px;
+            margin-top: 20px; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Score bar */
+        .score-section { text-align: center; margin-bottom: 20px; }
+        .score-label { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+        .score-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+        /* Detail grid */
+        .details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-item { background: #0f172a; border-radius: 8px; padding: 12px; }
+        .detail-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .detail-value { font-size: 0.95rem; font-weight: 500; }
+
+        /* Pattern tags */
+        .patterns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .tag { padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; }
+        .tag-red { background: #7f1d1d; color: #fca5a5; }
+        .tag-green { background: #14532d; color: #86efac; }
+
+        /* Feedback */
+        .feedback { margin-top: 16px; padding: 12px; background: #172554; border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0; }
+        .feedback p { font-size: 0.85rem; color: #93c5fd; margin-bottom: 4px; }
+
+        /* Batch summary */
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .summary-card { background: #0f172a; border-radius: 10px; padding: 16px; text-align: center; }
+        .summary-num { font-size: 1.8rem; font-weight: 700; }
+        .summary-label { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+
+        /* Batch table */
+        .batch-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+        .batch-table th { text-align: left; padding: 10px 8px; color: #64748b; border-bottom: 1px solid #334155; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
+        .batch-table td { padding: 10px 8px; border-bottom: 1px solid #1e293b; }
+        .batch-table tr:hover td { background: #1e293b; }
+
+        /* Score colors */
+        .score-0 { color: #ef4444; }
+        .score-1 { color: #f97316; }
+        .score-2 { color: #eab308; }
+        .score-3 { color: #22c55e; }
+        .score-4 { color: #10b981; }
+
+        .loading { text-align: center; color: #94a3b8; padding: 20px; }
+        .loading::after { content: ''; animation: dots 1.5s infinite; }
+        @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+
+        .error { color: #fca5a5; background: #7f1d1d; padding: 12px; border-radius: 8px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Password Strength Analyzer</h1>
+    <p class="subtitle">CPS 3498 Computer Security — Team 4</p>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('single')">Single Analysis</div>
+        <div class="tab" onclick="switchTab('batch')">Batch Audit</div>
+    </div>
+
+    <!-- Single Password Analysis -->
+    <div id="panel-single" class="panel active">
+        <div class="input-group">
+            <input type="password" id="pw-input" placeholder="Enter a password to analyze..." autocomplete="off">
+            <button class="toggle-vis" onclick="toggleVis()">Show</button>
+            <button id="analyze-btn" onclick="analyzePw()">Analyze</button>
+        </div>
+        <div id="single-result"></div>
+    </div>
+
+    <!-- Batch Audit -->
+    <div id="panel-batch" class="panel">
+        <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" accept=".txt,.csv">
+            <p>Drop a password list (.txt) here or click to browse</p>
+            <div class="filename" id="file-name"></div>
+        </div>
+        <button class="upload-btn" id="batch-btn" onclick="runBatch()" disabled>Run Batch Audit</button>
+        <div id="batch-result"></div>
+    </div>
+</div>
+
+<script>
+/* ── Tab switching ─────────────────────────────── */
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (name === 'single' && i === 0) || (name === 'batch' && i === 1));
+    });
+    document.getElementById('panel-single').classList.toggle('active', name === 'single');
+    document.getElementById('panel-batch').classList.toggle('active', name === 'batch');
+}
+
+/* ── Toggle password visibility ────────────────── */
+function toggleVis() {
+    const inp = document.getElementById('pw-input');
+    const btn = document.querySelector('.toggle-vis');
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+    else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+/* ── Score colors ──────────────────────────────── */
+const SCORE_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981'];
+const SCORE_LABELS = ['Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'];
+
+/* ── Single Analysis ───────────────────────────── */
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') analyzePw(); });
+
+async function analyzePw() {
+    const pw = document.getElementById('pw-input').value;
+    if (!pw) return;
+    const btn = document.getElementById('analyze-btn');
+    const box = document.getElementById('single-result');
+    btn.disabled = true; btn.textContent = '...';
+    box.innerHTML = '<div class="loading">Analyzing</div>';
+
+    try {
+        const form = new FormData();
+        form.append('password', pw);
+        const res = await fetch('/analyze', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.error) { box.innerHTML = '<div class="error">' + data.error + '</div>'; return; }
+        renderSingle(data, box);
+    } catch (e) {
+        box.innerHTML = '<div class="error">Request failed: ' + e.message + '</div>';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Analyze';
+    }
+}
+
+function renderSingle(d, box) {
+    const s = d.final_score;
+    const c = SCORE_COLORS[s];
+    let patterns = '';
+    if (d.patterns.keyboard_walk.detected) patterns += '<span class="tag tag-red">Keyboard Walk: ' + d.patterns.keyboard_walk.match + '</span>';
+    else patterns += '<span class="tag tag-green">No Keyboard Walk</span>';
+    if (d.patterns.date_pattern.detected) patterns += '<span class="tag tag-red">Date Pattern</span>';
+    if (d.patterns.leet_speak.detected) patterns += '<span class="tag tag-red">Leet Speak Detected</span>';
+    else patterns += '<span class="tag tag-green">No Leet Speak</span>';
+
+    let hibpHtml = '';
+    if (d.hibp.error) hibpHtml = '<span style="color:#fbbf24">API Error</span>';
+    else if (d.hibp.pwned) hibpHtml = '<span style="color:#ef4444">YES — ' + d.hibp.count.toLocaleString() + ' times</span>';
+    else hibpHtml = '<span style="color:#22c55e">Not Found in Breaches</span>';
+
+    let feedback = '';
+    if (d.feedback && (d.feedback.warning || (d.feedback.suggestions && d.feedback.suggestions.length))) {
+        feedback = '<div class="feedback">';
+        if (d.feedback.warning) feedback += '<p><strong>Warning:</strong> ' + d.feedback.warning + '</p>';
+        if (d.feedback.suggestions) d.feedback.suggestions.forEach(s => { feedback += '<p>• ' + s + '</p>'; });
+        feedback += '</div>';
+    }
+
+    box.innerHTML =
+        '<div class="result-card">' +
+            '<div class="score-section">' +
+                '<div class="score-label" style="color:' + c + '">' + SCORE_LABELS[s] + ' (' + s + '/4)</div>' +
+                '<div class="score-bar"><div class="score-fill" style="width:' + (s * 25 + 5) + '%;background:' + c + '"></div></div>' +
+            '</div>' +
+            '<div class="details">' +
+                '<div class="detail-item"><div class="detail-label">Length</div><div class="detail-value">' + d.password_length + ' characters</div></div>' +
+                '<div class="detail-item"><div class="detail-label">Crack Time</div><div class="detail-value">' + d.crack_time + '</div></div>' +
+                '<div class="detail-item" style="grid-column:span 2"><div class="detail-label">Breach Status (HIBP)</div><div class="detail-value">' + hibpHtml + '</div></div>' +
+            '</div>' +
+            '<div class="patterns">' + patterns + '</div>' +
+            feedback +
+        '</div>';
+}
+
+/* ── File upload ───────────────────────────────── */
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', () => { handleFile(fileInput.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(f) {
+    if (!f) return;
+    document.getElementById('file-name').textContent = f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+    document.getElementById('batch-btn').disabled = false;
+}
+
+/* ── Batch Audit ───────────────────────────────── */
+async function runBatch() {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const btn = document.getElementById('batch-btn');
+    const box = document.getElementById('batch-result');
+    btn.disabled = true; btn.textContent = 'Auditing...';
+    box.innerHTML = '<div class="loading">Analyzing passwords</div>';
+
+    try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch('/batch', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.error) { box.innerHTML = '<div class="error">' + data.error + '</div>'; return; }
+        renderBatch(data, box);
+    } catch (e) {
+        box.innerHTML = '<div class="error">Request failed: ' + e.message + '</div>';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Run Batch Audit';
+    }
+}
+
+function renderBatch(d, box) {
+    const passColor = d.pass_rate >= 70 ? '#22c55e' : d.pass_rate >= 40 ? '#eab308' : '#ef4444';
+
+    let rows = '';
+    d.results.forEach(r => {
+        const s = r.final_score;
+        const pwned = r.hibp && r.hibp.pwned ? '<span style="color:#ef4444">YES</span>'
+                     : r.hibp && r.hibp.error ? '<span style="color:#fbbf24">—</span>'
+                     : '<span style="color:#22c55e">No</span>';
+        rows += '<tr>' +
+            '<td>' + (r.password_masked || r.password || '***') + '</td>' +
+            '<td class="score-' + s + '">' + SCORE_LABELS[s] + '</td>' +
+            '<td>' + (r.crack_time || '?') + '</td>' +
+            '<td>' + pwned + '</td></tr>';
+    });
+
+    // score distribution bar
+    let distHtml = '';
+    for (let i = 0; i < 5; i++) {
+        const count = d.summary[i] || 0;
+        const pct = d.total > 0 ? Math.round(count / d.total * 100) : 0;
+        distHtml += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0">' +
+            '<span style="width:80px;font-size:0.8rem;color:' + SCORE_COLORS[i] + '">' + SCORE_LABELS[i] + '</span>' +
+            '<div style="flex:1;background:#334155;height:12px;border-radius:4px;overflow:hidden">' +
+                '<div style="width:' + pct + '%;height:100%;background:' + SCORE_COLORS[i] + ';border-radius:4px"></div>' +
+            '</div>' +
+            '<span style="font-size:0.8rem;width:50px;text-align:right">' + count + ' (' + pct + '%)</span></div>';
+    }
+
+    box.innerHTML =
+        '<div class="result-card">' +
+            '<div class="summary-grid">' +
+                '<div class="summary-card"><div class="summary-num">' + d.total + '</div><div class="summary-label">Passwords</div></div>' +
+                '<div class="summary-card"><div class="summary-num" style="color:' + passColor + '">' + d.pass_rate + '%</div><div class="summary-label">Pass Rate (≥ 3)</div></div>' +
+                '<div class="summary-card"><div class="summary-num" style="color:#ef4444">' + d.pwned_count + '</div><div class="summary-label">Breached</div></div>' +
+            '</div>' +
+            '<h3 style="margin-bottom:8px;font-size:0.9rem;color:#94a3b8">Score Distribution</h3>' + distHtml +
+            '<table class="batch-table"><thead><tr><th>Password</th><th>Strength</th><th>Crack Time</th><th>Breached</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table>' +
+        '</div>';
+}
+</script>
+</body>
+</html>
