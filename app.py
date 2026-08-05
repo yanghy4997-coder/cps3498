@@ -13,6 +13,7 @@ from analyzer import analyze_password
 from batch_audit import run_audit
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 
 
 @app.route("/")
@@ -39,9 +40,12 @@ def batch():
     if not passwords:
         return jsonify({"error": "File is empty"}), 400
     audit = run_audit(passwords)
-    # remove raw password strings from response for safety
-    for r in audit["results"]:
-        r["password_masked"] = r["password"][:2] + "*" * (len(r["password"]) - 2)
+    # Never return raw passwords to the browser. The analysis pipeline needs the
+    # value internally, but the UI only receives a length-preserving mask.
+    for result in audit["results"]:
+        password = result.pop("password")
+        visible = min(2, len(password))
+        result["password_masked"] = password[:visible] + "*" * (len(password) - visible)
     return jsonify(audit)
 
 
