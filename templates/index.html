@@ -116,6 +116,19 @@
         @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
 
         .error { color: #fca5a5; background: #7f1d1d; padding: 12px; border-radius: 8px; margin-top: 12px; }
+
+        .privacy-note { color: #64748b; font-size: 0.78rem; line-height: 1.5; margin-top: 10px; }
+        .table-wrap { overflow-x: auto; }
+
+        @media (max-width: 640px) {
+            .container { padding: 24px 14px; }
+            .input-row { flex-wrap: wrap; }
+            .input-row input { min-width: 100%; }
+            #analyze-btn, .toggle-vis { min-height: 42px; }
+            .summary-grid, .details { grid-template-columns: 1fr; }
+            .detail-item[style] { grid-column: auto !important; }
+            .upload-zone { padding: 28px 14px; }
+        }
     </style>
 </head>
 <body>
@@ -137,6 +150,7 @@
                 <button class="toggle-vis" onclick="toggleVis()">Show</button>
                 <button id="analyze-btn" onclick="analyzePw()">Analyze</button>
             </div>
+            <p class="privacy-note">Passwords are analyzed in memory and are never stored. HIBP checks use k-anonymity, sending only the first five SHA-1 hash characters.</p>
         </div>
         <div id="single-result"></div>
     </div>
@@ -149,6 +163,7 @@
             <div class="filename" id="file-name"></div>
         </div>
         <button class="upload-btn" id="batch-btn" onclick="runBatch()" disabled>Run Batch Audit</button>
+        <p class="privacy-note">Maximum upload size: 1 MB. Raw passwords are never returned in the browser response.</p>
         <div id="batch-result"></div>
     </div>
 </div>
@@ -314,8 +329,8 @@ function renderBatch(d, box) {
                 '<div class="summary-card"><div class="summary-num" style="color:#ef4444">' + d.pwned_count + '</div><div class="summary-label">Breached</div></div>' +
             '</div>' +
             '<h3 style="margin-bottom:8px;font-size:0.9rem;color:#94a3b8">Score Distribution</h3>' + distHtml +
-            '<table class="batch-table"><thead><tr><th>Password</th><th>Strength</th><th>Crack Time</th><th>Breached</th></tr></thead>' +
-            '<tbody>' + rows + '</tbody></table>' +
+            '<div class="table-wrap"><table class="batch-table"><thead><tr><th>Password</th><th>Strength</th><th>Crack Time</th><th>Breached</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div>' +
         '</div>';
 }
 </script>
